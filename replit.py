@@ -57,5 +57,37 @@ if selected_customer_option:
                 max_value=50,
                 value=int(selected_customer['Tenure'].iloc[0])
             )
+
+        with col2:
+            balance = st.number_input(
+                "Balance",
+                min_value=0.0,
+                max_value=1_000_000.0,  # Adjust max value as appropriate
+                value=float(selected_customer['Balance'].fillna(0).iloc[0])  # Handle NaN values
+            )
+
+            num_products = st.number_input(
+                "Number of Products",
+                min_value=0,
+                max_value=10,
+                value=int(selected_customer['NumOfProducts'].iloc[0])
+            )
+
+            has_credit_card = st.checkbox(
+                "Has Credit Card",
+                value=bool(selected_customer['HasCrCard'].iloc[0])
+            )
+
+            is_active_member = st.checkbox(
+                "Is Active Member",
+                value=bool(selected_customer['IsActiveMember'].iloc[0])
+            )
+
+            estimated_salary = st.number_input(
+                "Estimated Salary",
+                min_value=0.0,
+                max_value=1_000_000.0,  # Adjust max value as appropriate
+                value=float(selected_customer['EstimatedSalary'].fillna(0).iloc[0])  # Handle NaN values
+            )
     else:
         st.write("Selected customer data not found.")

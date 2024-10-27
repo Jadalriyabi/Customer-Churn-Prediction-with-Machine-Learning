@@ -93,3 +93,8 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 ---
 
 This README provides an overview of your project and guides users on how to install, run, and contribute. You can add any specific details or results from your notebook directly to the README as needed.
+
+
+
+
+here is the link to the replit code:https://replit.com/@jad18/Churn-Project

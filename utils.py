@@ -21,16 +21,16 @@ def create_gauge_chart(probability):
                 'text': "Churn Probability",
                 'font': {
                     'size': 22,
-                    'color': 'black'  # Set title font color to black
+                    'color': 'white'  # Set title font color to black
                 }
             },
-            number={'font': {'size': 38, 'color': 'black'}},  # Set the number font color to black
+            number={'font': {'size': 38, 'color': 'white'}},  # Set the number font color to black
             gauge={
                 'axis': {
                     'range': [0, 100],
                     'tickwidth': 2,
                     'tickcolor': "black",  # Change tick color to black to be visible on a white background
-                    'tickfont': {'size': 12, 'color': 'black'}  # Tick font color is black
+                    'tickfont': {'size': 12, 'color': 'white'}  # Tick font color is black
                 },
                 'bar': {'color': color, 'thickness': 0.25},
                 'bgcolor': "rgba(0,0,0,0)",

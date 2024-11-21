@@ -7,22 +7,16 @@ from openai import OpenAI
 import plotly.graph_objs as go
 import utils  
 
-# Set up OpenAI client
-client = OpenAI(
-    base_url="https://api.groq.com/openai/v1",
-    api_key=os.environ.get("GROQ_API_KEY")
-)
-
 # Function to load models
 def load_model(filename):
     with open(filename, 'rb') as file:
         return pickle.load(file)
 
 # Load models
-xgboost_model = load_model('xgb_model.pkl')
-native_bayes_model = load_model('nb_model.pkl')
-random_forest_model = load_model('rf_model.pkl')
-knn_model = load_model('knn_model.pkl')
+xgboost_model = load_model('Data/xgb_model.pkl')
+native_bayes_model = load_model('Data/nb_model.pkl')
+random_forest_model = load_model('Data/rf_model.pkl')
+knn_model = load_model('Data/knn_model.pkl')
 
 # Function to prepare input data for prediction
 def prepare_input(credit_score, location, gender, age, tenure, balance, num_of_products, has_credit_card, is_active_member, estimated_salary):
@@ -45,81 +39,68 @@ def prepare_input(credit_score, location, gender, age, tenure, balance, num_of_p
     input_df = pd.DataFrame([input_dict])
     return input_df, input_dict
 
+# Function to align input features with model
+def align_features(input_df, model):
+    """Align input features with the model's expected features."""
+    if hasattr(model, 'get_booster') and model.get_booster().feature_names:
+        expected_features = model.get_booster().feature_names
+        
+        # Add missing features with default value 0
+        for feature in expected_features:
+            if feature not in input_df.columns:
+                input_df[feature] = 0
+        
+        # Reorder columns to match model's training order
+        input_df = input_df[expected_features]
+    
+    return input_df
+
 # Function to make predictions
 def make_prediction(input_df, input_dict):
-    input_df = input_df.fillna(0)
-    input_df = input_df.astype(float)
+    # Align features for each model
+    input_df_xgb = align_features(input_df.copy(), xgboost_model)
+    input_df_rf = input_df.copy()  # Assuming random_forest_model doesn't need alignment
+    input_df_knn = input_df.copy()  # Assuming knn_model doesn't need alignment
+
+    # Fill missing values and ensure float type
+    input_df_xgb = input_df_xgb.fillna(0).astype(float)
+    input_df_rf = input_df_rf.fillna(0).astype(float)
+    input_df_knn = input_df_knn.fillna(0).astype(float)
 
     probabilities = {
-        'XGBoost': xgboost_model.predict_proba(input_df)[0][1],
-        'Random Forest': random_forest_model.predict_proba(input_df)[0][1],
-        'K-Nearest Neighbors': knn_model.predict_proba(input_df)[0][1]
+        'XGBoost': xgboost_model.predict_proba(input_df_xgb)[0][1],
+        'Random Forest': random_forest_model.predict_proba(input_df_rf)[0][1],
+        'K-Nearest Neighbors': knn_model.predict_proba(input_df_knn)[0][1]
     }
 
     avg_probability = np.mean(list(probabilities.values()))
     return avg_probability, probabilities
 
-# Function to explain prediction
-def explain_prediction(probability, input_dict, surname):
-    prompt = f"""You are an expert data scientist at a bank, where you specialize in interpreting and explaining predictions of machine learning models.
-
-    Your machine learning model has predicted that a customer named {surname} has a {round(probability * 100, 1)}% probability of churning, based on the information provided below.
-
-    Here is the customer's information:
-    {input_dict}
-
-    - If the customer has over a 40% risk of churning, generate a 3-sentence explanation of why they are at risk of churning.
-
-    - If the customer has less than a 40% risk of churning, generate a 3-sentence explanation of why they might not be at risk of churning.
-
-    Don't mention the probability of churning or the customers who churned or the machine learning model, or say anything like "Based on the machine learning model and the top 10 most important features." Just explain the prediction. Also, don't include any calculations—just give the explanation simple and clear.
-    """
-
-    raw_response = client.chat.completions.create(
-        model="LLama-3.2-3b-preview",
-        messages=[{
-            "role": "user",
-            "content": prompt
-        }]
-    )
-
-    return raw_response.choices[0].message.content
-
 # Function to generate email
 def generate_email(probability, input_dict, explanation, surname):
-    prompt = f"""You are a manager at HS Bank. You are responsible for
-ensuring customers stay with the bank and are incentivized with various offers.
+    # Simulated email generation code
+    email = f"""
+    Dear {surname},
 
-You noticed a customer named {surname} has a {round(probability *
-100, 1)}% probability of churning.
+    Based on our analysis, we believe there are opportunities to improve your banking experience with us. 
+    Here are some incentives we are offering:
 
-Here is the customer's information:
-{input_dict}
+    - Lower interest rates for loyal customers
+    - Personalized financial advice
+    - Special rewards for account activity
 
-Here is some explanation as to why the customer might be at risk of churning:
-{explanation}
+    Please don't hesitate to reach out for further assistance.
 
-Generate an email to the customer based on their information, asking them to stay if they are at risk of churning, or offering them incentives so that they become more loyal to the bank.
-
-Make sure to list out a set of incentives to stay based on their information,
-in bullet point format. Don't ever mention the probability of churning, or the machine learning model to the customer. 
+    Best regards,
+    HS Bank
     """
-
-    raw_response = client.chat.completions.create(
-        model="llama-3.1-8b-instant", 
-        messages=[{
-            "role": "user",
-            "content": prompt
-        }]
-    )
-
-    return raw_response.choices[0].message.content
+    return email
 
 # Streamlit app title
 st.title("🧮 Customer Churn Prediction")
 
 # Load dataset
-df = pd.read_csv("churn.csv")
+df = pd.read_csv("Data/churn.csv")
 
 # Create list of customers for dropdown
 customers = [f"{row['CustomerId']} - {row['Surname']} " for _, row in df.iterrows()]
@@ -213,24 +194,12 @@ if selected_customer_option:
         # Make predictions and display results
         avg_probability, probabilities = make_prediction(input_df, input_dict)
 
-        # Show Gauge and Model Comparison side by side
+        # Display results
         st.subheader("📊 Churn Probability and Model Comparison")
-        gauge_col, model_col = st.columns(2)
-
-        with gauge_col:
-            fig = utils.create_gauge_chart(avg_probability)
-            st.plotly_chart(fig, use_container_width=True)
-
-        with model_col:
-            fig_probs = utils.create_model_probability_chart(probabilities)
-            st.plotly_chart(fig_probs, use_container_width=True)
-
-        # Generate and display explanation
-        st.subheader("💡 Explanation of Prediction")
-        explanation = explain_prediction(avg_probability, input_dict, selected_customer['Surname'])
-        st.markdown(explanation)
+        st.write(f"Average Probability: {avg_probability:.2%}")
+        st.write("Model Probabilities:", probabilities)
 
         # Generate and display email
+        email = generate_email(avg_probability, input_dict, "", selected_customer['Surname'])
         st.subheader("📧 Personalized Email")
-        email = generate_email(avg_probability, input_dict, explanation, selected_customer['Surname'])
         st.markdown(email)

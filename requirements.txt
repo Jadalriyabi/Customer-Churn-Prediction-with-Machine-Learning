@@ -4,3 +4,5 @@ numpy
 openai
 plotly
 pickle-mixin  # This is for using pickle
+scikit-learn
+xgboost

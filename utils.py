@@ -96,3 +96,11 @@ def create_pie_chart(probabilities):
     # Create a pie chart
     fig = go.Figure(data=[go.Pie(labels=models, values=probs)])
     # Update chart layout for a sleek look
+    fig.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font={'color': "black"},  # General font color set to black
+        width=450,  # Slightly increased width for better balance
+        height=300,
+        margin=dict(l=20, r=20, t=50, b=20)
+    )

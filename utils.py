@@ -86,3 +86,13 @@ def create_model_probability_chart(probabilities):
     )
 
     return fig
+
+
+
+# Function to create the pie chart
+def create_pie_chart(probabilities):
+    models = list(probabilities.keys())
+    probs = list(probabilities.values())
+    # Create a pie chart
+    fig = go.Figure(data=[go.Pie(labels=models, values=probs)])
+    # Update chart layout for a sleek look
